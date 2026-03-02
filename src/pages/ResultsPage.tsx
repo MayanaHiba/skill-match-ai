@@ -128,26 +128,31 @@ const ResultsPage = () => {
           <div className="mt-6 bg-card rounded-xl border border-border p-8 text-center animate-slide-up" style={{ animationDelay: '0.1s' }}>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-4">Overall Compatibility Score</p>
             <div className="flex justify-center">
-              <ResponsiveContainer width={200} height={200}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={65}
-                    outerRadius={90}
-                    startAngle={90}
-                    endAngle={-270}
-                    dataKey="value"
-                    strokeWidth={0}
-                  >
-                    <Cell fill="hsl(43, 74%, 49%)" />
-                    <Cell fill="hsl(0, 0%, 92%)" />
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="relative w-[140px] h-[140px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={65}
+                      startAngle={90}
+                      endAngle={-270}
+                      dataKey="value"
+                      strokeWidth={0}
+                    >
+                      <Cell fill="hsl(43, 74%, 49%)" />
+                      <Cell fill="hsl(0, 0%, 92%)" />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-3xl font-display font-bold text-foreground">{result.matchPercentage}%</span>
+                </div>
+              </div>
             </div>
-            <div className="-mt-[130px] mb-[60px]">
+            <div className="mt-4">
               <span className="text-4xl font-display font-bold text-foreground">{result.matchPercentage}%</span>
             </div>
             <span className={`inline-block text-xs font-semibold px-3 py-1.5 rounded-full border ${levelColors[result.recommendationLevel]}`}>
