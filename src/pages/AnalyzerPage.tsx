@@ -1,32 +1,49 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.jpeg";
-import { JOB_ROLES, CANDIDATES, extractKeywords } from "@/lib/analysis-data";
+import ThemeToggle from "@/components/ThemeToggle";
+import { JOB_ROLES, CANDIDATES, extractKeywords, analyzeMatch, getRecommendation } from "@/lib/analysis-data";
+
+interface ResumeEntry {
+  id: number;
+  name: string;
+  text: string;
+}
 
 const AnalyzerPage = () => {
   const navigate = useNavigate();
   const [mode, setMode] = useState<'example' | 'custom'>('example');
-  
+
   // Example mode
   const [selectedRole, setSelectedRole] = useState("");
-  const [selectedCandidate, setSelectedCandidate] = useState("");
-  
+
   // Custom mode
   const [jobDescText, setJobDescText] = useState("");
-  const [resumeText, setResumeText] = useState("");
-  const [candidateName, setCandidateName] = useState("");
-  
+  const [resumes, setResumes] = useState<ResumeEntry[]>([{ id: 1, name: "", text: "" }]);
+  const [nextId, setNextId] = useState(2);
+
   // Resume image
   const [resumeImage, setResumeImage] = useState<string | null>(null);
 
   const selectedJobRole = JOB_ROLES.find(
     r => `${r.role} – ${r.company}` === selectedRole
   );
-  const selectedCand = CANDIDATES.find(
-    c => `${c.name} – ${c.label}` === selectedCandidate
-  );
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const addResume = () => {
+    setResumes(prev => [...prev, { id: nextId, name: "", text: "" }]);
+    setNextId(prev => prev + 1);
+  };
+
+  const removeResume = (id: number) => {
+    if (resumes.length <= 1) return;
+    setResumes(prev => prev.filter(r => r.id !== id));
+  };
+
+  const updateResume = (id: number, field: 'name' | 'text', value: string) => {
+    setResumes(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, resumeId: number) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -39,60 +56,73 @@ const AnalyzerPage = () => {
 
   const handleAnalyze = () => {
     let jobKw: string[] = [];
-    let resume = "";
     let role = "";
     let company = "";
-    let name = "";
+    let allCandidates: { name: string; resumeText: string }[] = [];
 
     if (mode === 'example') {
-      if (!selectedJobRole || !selectedCand) return;
+      if (!selectedJobRole) return;
       jobKw = selectedJobRole.keywords;
-      resume = selectedCand.resumeText;
       role = selectedJobRole.role;
       company = selectedJobRole.company;
-      name = selectedCand.name;
+      allCandidates = CANDIDATES.map(c => ({ name: c.name, resumeText: c.resumeText }));
     } else {
-      if (!jobDescText.trim() || !resumeText.trim()) return;
+      if (!jobDescText.trim()) return;
+      const validResumes = resumes.filter(r => r.text.trim());
+      if (validResumes.length === 0) return;
       jobKw = extractKeywords(jobDescText);
-      resume = resumeText;
       role = "Custom Role";
       company = "Custom";
-      name = candidateName || "Custom Candidate";
+      allCandidates = validResumes.map(r => ({
+        name: r.name || `Candidate ${r.id}`,
+        resumeText: r.text,
+      }));
     }
+
+    // Analyze all candidates and find the best
+    const rankings = allCandidates.map(c => {
+      const result = analyzeMatch(jobKw, c.resumeText);
+      return { ...c, ...result };
+    });
+    rankings.sort((a, b) => b.matchPercentage - a.matchPercentage);
+
+    const best = rankings[0];
+    const rec = getRecommendation(best.matchPercentage);
 
     const data = {
       jobKeywords: jobKw,
-      resumeText: resume,
+      resumeText: best.resumeText,
       role,
       company,
-      candidateName: name,
-      allCandidates: mode === 'example' ? CANDIDATES.map(c => ({
-        name: c.name,
-        resumeText: c.resumeText,
-      })) : undefined,
+      candidateName: best.name,
+      allCandidates,
     };
 
     sessionStorage.setItem('analysisData', JSON.stringify(data));
     navigate('/results');
   };
 
+  const canAnalyze = mode === 'example'
+    ? !!selectedRole
+    : jobDescText.trim() !== '' && resumes.some(r => r.text.trim() !== '');
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Navbar */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
         <button onClick={() => navigate('/home')} className="flex items-center gap-3 group">
           <img src={logo} alt="HF" className="w-10 h-10 rounded-full object-cover transition-shadow group-hover:shadow-gold" />
           <span className="font-display font-bold text-lg text-foreground">Intelli-Hire</span>
         </button>
+        <ThemeToggle />
       </nav>
 
       <main className="flex-1 py-10 px-6">
         <div className="max-w-3xl mx-auto">
           <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground text-center">
-            Resume & Job Description Analyzer
+            ATS Resume Screening
           </h1>
           <p className="text-center text-muted-foreground mt-2 text-sm">
-            Select a mode to begin analysis
+            Add a job description and multiple resumes — unmatched candidates are eliminated automatically
           </p>
 
           {/* Mode Toggle */}
@@ -146,8 +176,7 @@ const AnalyzerPage = () => {
                     <p className="text-sm text-foreground">{selectedJobRole.description}</p>
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {selectedJobRole.keywords.map(k => (
-                        <span key={k} className="text-xs bg-primary/10 text-primary-foreground/80 px-2 py-1 rounded-md font-medium"
-                          style={{ backgroundColor: 'hsl(43 74% 49% / 0.12)', color: 'hsl(43 74% 38%)' }}>
+                        <span key={k} className="text-xs px-2 py-1 rounded-md font-medium bg-accent/15 text-accent-foreground">
                           {k}
                         </span>
                       ))}
@@ -156,47 +185,36 @@ const AnalyzerPage = () => {
                 )}
               </div>
 
-              {/* Candidate Select */}
+              {/* Candidates Preview */}
               <div className="bg-card rounded-xl border border-border p-6">
-                <label className="block text-sm font-semibold text-foreground mb-3">
-                  Select Candidate Resume
-                </label>
-                <select
-                  value={selectedCandidate}
-                  onChange={e => setSelectedCandidate(e.target.value)}
-                  className="w-full border border-input rounded-lg px-4 py-3 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Choose a candidate...</option>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-semibold text-foreground">
+                    Candidates to Screen ({CANDIDATES.length})
+                  </label>
+                  <span className="text-xs text-muted-foreground">All candidates will be ranked</span>
+                </div>
+                <div className="space-y-3">
                   {CANDIDATES.map(c => (
-                    <option key={c.name} value={`${c.name} – ${c.label}`}>
-                      {c.name} – {c.label}
-                    </option>
+                    <div key={c.name} className="p-3 bg-secondary rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-foreground">{c.name}</span>
+                        <span className="text-xs text-muted-foreground">{c.label}</span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {c.skills.slice(0, 5).map(s => (
+                          <span key={s} className="text-xs bg-background px-1.5 py-0.5 rounded text-muted-foreground">{s}</span>
+                        ))}
+                        {c.skills.length > 5 && (
+                          <span className="text-xs text-muted-foreground">+{c.skills.length - 5} more</span>
+                        )}
+                      </div>
+                    </div>
                   ))}
-                </select>
-                {selectedCand && (
-                  <div className="mt-4 p-4 bg-secondary rounded-lg">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Resume Preview</p>
-                    <p className="text-sm text-foreground whitespace-pre-line">{selectedCand.resumeText}</p>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           ) : (
             <div className="mt-8 space-y-6 animate-fade-in">
-              {/* Candidate Name */}
-              <div className="bg-card rounded-xl border border-border p-6">
-                <label className="block text-sm font-semibold text-foreground mb-3">
-                  Candidate Name
-                </label>
-                <input
-                  type="text"
-                  value={candidateName}
-                  onChange={e => setCandidateName(e.target.value)}
-                  placeholder="Enter candidate name..."
-                  className="w-full border border-input rounded-lg px-4 py-3 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-
               {/* Job Description */}
               <div className="bg-card rounded-xl border border-border p-6">
                 <label className="block text-sm font-semibold text-foreground mb-3">
@@ -206,39 +224,72 @@ const AnalyzerPage = () => {
                   value={jobDescText}
                   onChange={e => setJobDescText(e.target.value)}
                   placeholder="Paste the job description copied from Google, LinkedIn, or company website..."
-                  rows={6}
+                  rows={5}
                   className="w-full border border-input rounded-lg px-4 py-3 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                 />
               </div>
 
-              {/* Resume */}
+              {/* Multiple Resumes */}
               <div className="bg-card rounded-xl border border-border p-6">
-                <label className="block text-sm font-semibold text-foreground mb-3">
-                  Candidate Resume
-                </label>
-                <textarea
-                  value={resumeText}
-                  onChange={e => setResumeText(e.target.value)}
-                  placeholder="Paste candidate resume text here. Include skills, experience, projects, certifications..."
-                  rows={6}
-                  className="w-full border border-input rounded-lg px-4 py-3 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                />
-                
-                <div className="mt-4 flex items-center gap-4">
-                  <span className="text-xs text-muted-foreground">— OR —</span>
-                  <label className="cursor-pointer inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Upload Resume Image
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-sm font-semibold text-foreground">
+                    Candidate Resumes ({resumes.length})
                   </label>
+                  <button
+                    onClick={addResume}
+                    className="text-xs font-medium px-3 py-1.5 rounded-md bg-secondary text-foreground hover:bg-secondary/80 transition-colors"
+                  >
+                    + Add Candidate
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {resumes.map((r, i) => (
+                    <div key={r.id} className="p-4 bg-secondary rounded-lg relative">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Resume #{i + 1}
+                        </span>
+                        {resumes.length > 1 && (
+                          <button
+                            onClick={() => removeResume(r.id)}
+                            className="text-xs text-destructive hover:underline"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        value={r.name}
+                        onChange={e => updateResume(r.id, 'name', e.target.value)}
+                        placeholder="Candidate name..."
+                        className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring mb-2"
+                      />
+                      <textarea
+                        value={r.text}
+                        onChange={e => updateResume(r.id, 'text', e.target.value)}
+                        placeholder="Paste resume content — skills, experience, projects, certifications..."
+                        rows={4}
+                        className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                      />
+                      <div className="mt-2 flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">— OR —</span>
+                        <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          Upload Image
+                          <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, r.id)} />
+                        </label>
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 {resumeImage && (
                   <div className="mt-4 border border-border rounded-lg overflow-hidden">
-                    <img src={resumeImage} alt="Uploaded resume" className="max-w-full max-h-64 object-contain mx-auto" />
+                    <img src={resumeImage} alt="Uploaded resume" className="max-w-full max-h-48 object-contain mx-auto" />
                     <p className="text-xs text-muted-foreground text-center py-2">
-                      Resume image uploaded. Please also paste the text content above for analysis.
+                      Image uploaded. Please also paste text content for analysis.
                     </p>
                   </div>
                 )}
@@ -250,14 +301,10 @@ const AnalyzerPage = () => {
           <div className="mt-8 text-center">
             <button
               onClick={handleAnalyze}
-              disabled={
-                mode === 'example'
-                  ? !selectedRole || !selectedCandidate
-                  : !jobDescText.trim() || !resumeText.trim()
-              }
+              disabled={!canAnalyze}
               className="inline-flex items-center gap-2 bg-gold-gradient text-primary-foreground font-semibold px-10 py-3.5 rounded-lg shadow-gold hover:shadow-lg hover:scale-[1.02] transition-all duration-300 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
             >
-              Analyze Resume
+              Screen & Rank Candidates
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.jpeg";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -12,12 +13,15 @@ const HomePage = () => {
           <img src={logo} alt="HF" className="w-10 h-10 rounded-full object-cover transition-shadow group-hover:shadow-gold" />
           <span className="font-display font-bold text-lg text-foreground">Intelli-Hire</span>
         </button>
-        <button
-          onClick={() => navigate('/analyzer')}
-          className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Launch Analyzer →
-        </button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <button
+            onClick={() => navigate('/analyzer')}
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Launch Analyzer →
+          </button>
+        </div>
       </nav>
 
       {/* Hero */}

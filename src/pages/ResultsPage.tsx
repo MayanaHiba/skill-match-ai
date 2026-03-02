@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.jpeg";
+import ThemeToggle from "@/components/ThemeToggle";
 import { analyzeMatch, getRecommendation, type AnalysisResult } from "@/lib/analysis-data";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -97,7 +98,10 @@ const ResultsPage = () => {
           <img src={logo} alt="HF" className="w-10 h-10 rounded-full object-cover transition-shadow group-hover:shadow-gold" />
           <span className="font-display font-bold text-lg text-foreground">Intelli-Hire</span>
         </button>
-        <img src={logo} alt="HF" className="w-8 h-8 rounded-full object-cover opacity-60" />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <img src={logo} alt="HF" className="w-8 h-8 rounded-full object-cover opacity-60" />
+        </div>
       </nav>
 
       <main className="flex-1 py-10 px-6">
@@ -151,9 +155,6 @@ const ResultsPage = () => {
                   <span className="text-3xl font-display font-bold text-foreground">{result.matchPercentage}%</span>
                 </div>
               </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-4xl font-display font-bold text-foreground">{result.matchPercentage}%</span>
             </div>
             <span className={`inline-block text-xs font-semibold px-3 py-1.5 rounded-full border ${levelColors[result.recommendationLevel]}`}>
               {levelLabels[result.recommendationLevel]} – Recommended for Technical Interview
