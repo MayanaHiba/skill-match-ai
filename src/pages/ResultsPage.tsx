@@ -2,8 +2,20 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.jpeg";
 import ThemeToggle from "@/components/ThemeToggle";
-import { analyzeMatch, getRecommendation, type AnalysisResult } from "@/lib/analysis-data";
+import { matchSkills, getMatchRecommendation } from "@/lib/skill-database";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+interface AnalysisResult {
+  candidateName: string;
+  role: string;
+  company: string;
+  matchPercentage: number;
+  matchedSkills: string[];
+  missingSkills: string[];
+  totalRequired: number;
+  recommendation: string;
+  recommendationLevel: 'strong' | 'moderate' | 'weak';
+}
 
 const ResultsPage = () => {
   const navigate = useNavigate();
@@ -20,29 +32,25 @@ const ResultsPage = () => {
 
     const timer = setTimeout(() => {
       const data = JSON.parse(raw);
-      const { matchedSkills, missingSkills, matchPercentage } = analyzeMatch(
-        data.jobKeywords,
-        data.resumeText
-      );
-      const rec = getRecommendation(matchPercentage);
+      const { matched, missing, percentage } = matchSkills(data.jobKeywords, data.resumeText);
+      const rec = getMatchRecommendation(percentage);
 
       setResult({
         candidateName: data.candidateName,
         role: data.role,
         company: data.company,
-        matchPercentage,
-        matchedSkills,
-        missingSkills,
+        matchPercentage: percentage,
+        matchedSkills: matched,
+        missingSkills: missing,
         totalRequired: data.jobKeywords.length,
         recommendation: rec.text,
         recommendationLevel: rec.level,
       });
 
-      // Rank all candidates if example mode
       if (data.allCandidates) {
         const rankings = data.allCandidates.map((c: { name: string; resumeText: string }) => {
-          const r = analyzeMatch(data.jobKeywords, c.resumeText);
-          return { name: c.name, score: r.matchPercentage };
+          const r = matchSkills(data.jobKeywords, c.resumeText);
+          return { name: c.name, score: r.percentage };
         });
         rankings.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
         setCandidateRanking(rankings);
