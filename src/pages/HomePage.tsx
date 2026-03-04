@@ -16,10 +16,10 @@ const HomePage = () => {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <button
-            onClick={() => navigate('/analyzer')}
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => navigate('/login')}
+            className="text-sm font-medium bg-gold-gradient text-primary-foreground px-4 py-2 rounded-lg hover:shadow-lg transition-all"
           >
-            Launch Analyzer →
+            Sign In
           </button>
         </div>
       </nav>

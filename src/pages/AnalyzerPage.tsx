@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.jpeg";
 import ThemeToggle from "@/components/ThemeToggle";
-import { JOB_ROLES, CANDIDATES, extractKeywords, analyzeMatch, getRecommendation } from "@/lib/analysis-data";
+import { JOB_ROLES, CANDIDATES } from "@/lib/analysis-data";
+import { extractSkillsFromText, matchSkills, getMatchRecommendation } from "@/lib/skill-database";
 
 interface ResumeEntry {
   id: number;
@@ -70,7 +71,7 @@ const AnalyzerPage = () => {
       if (!jobDescText.trim()) return;
       const validResumes = resumes.filter(r => r.text.trim());
       if (validResumes.length === 0) return;
-      jobKw = extractKeywords(jobDescText);
+      jobKw = extractSkillsFromText(jobDescText);
       role = "Custom Role";
       company = "Custom";
       allCandidates = validResumes.map(r => ({
@@ -81,13 +82,13 @@ const AnalyzerPage = () => {
 
     // Analyze all candidates and find the best
     const rankings = allCandidates.map(c => {
-      const result = analyzeMatch(jobKw, c.resumeText);
-      return { ...c, ...result };
+      const result = matchSkills(jobKw, c.resumeText);
+      return { ...c, matchPercentage: result.percentage, ...result };
     });
     rankings.sort((a, b) => b.matchPercentage - a.matchPercentage);
 
     const best = rankings[0];
-    const rec = getRecommendation(best.matchPercentage);
+    const rec = getMatchRecommendation(best.matchPercentage);
 
     const data = {
       jobKeywords: jobKw,
