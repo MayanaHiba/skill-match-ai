@@ -119,7 +119,7 @@ const STOP_WORDS = new Set([
 
 export function extractKeywords(text: string): string[] {
   const normalized = text.toLowerCase();
-  const words = normalized.split(/[\s,;.()\/\-|]+/).filter(w => w.length > 1);
+  const words = normalized.split(/[\s,;.()/\-|]+/).filter(w => w.length > 1);
   
   const multiWordSkills = [
     "machine learning", "deep learning", "data structures", "system design",
