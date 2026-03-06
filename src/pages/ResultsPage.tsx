@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "@/assets/logo.jpeg";
-import ThemeToggle from "@/components/ThemeToggle";
+import Navbar from "@/components/Navbar";
 import { matchSkills, getMatchRecommendation } from "@/lib/skill-database";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -101,16 +100,7 @@ const ResultsPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <button onClick={() => navigate('/home')} className="flex items-center gap-3 group">
-          <img src={logo} alt="HF" className="w-10 h-10 rounded-full object-cover transition-shadow group-hover:shadow-gold" />
-          <span className="font-display font-bold text-lg text-foreground">Intelli-Hire</span>
-        </button>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <img src={logo} alt="HF" className="w-8 h-8 rounded-full object-cover opacity-60" />
-        </div>
-      </nav>
+      <Navbar />
 
       <main className="flex-1 py-10 px-6">
         <div className="max-w-4xl mx-auto">
@@ -257,13 +247,13 @@ const ResultsPage = () => {
             <p className="text-sm text-muted-foreground leading-relaxed">{result.recommendation}</p>
           </div>
 
-          {/* Back Button */}
+          {/* Navigation Buttons */}
           <div className="mt-8 flex justify-center gap-4">
             <button
-              onClick={() => navigate('/analyzer')}
+              onClick={() => navigate('/home')}
               className="inline-flex items-center gap-2 border border-border text-foreground font-medium px-6 py-3 rounded-lg hover:bg-secondary transition-colors"
             >
-              ← Back to Analyzer
+              ← Back to Dashboard
             </button>
             <button
               onClick={() => {
@@ -272,7 +262,7 @@ const ResultsPage = () => {
               }}
               className="inline-flex items-center gap-2 bg-gold-gradient text-primary-foreground font-medium px-6 py-3 rounded-lg shadow-gold hover:shadow-lg transition-all"
             >
-              New Analysis
+              Analyze Another Resume
             </button>
           </div>
         </div>
