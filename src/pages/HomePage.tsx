@@ -1,30 +1,56 @@
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.jpeg";
 import ThemeToggle from "@/components/ThemeToggle";
+import { isLoggedIn, getCurrentUser, logout } from "@/lib/auth";
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const loggedIn = isLoggedIn();
+  const user = getCurrentUser();
+
+  const handleStartAnalysis = () => {
+    if (!loggedIn) {
+      navigate("/login");
+      return;
+    }
+    navigate("/analyzer");
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Navbar */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <button onClick={() => navigate('/')} className="flex items-center gap-3 group">
+        <button onClick={() => navigate("/")} className="flex items-center gap-3 group">
           <img src={logo} alt="HF" className="w-10 h-10 rounded-full object-cover transition-shadow group-hover:shadow-gold" />
           <span className="font-display font-bold text-lg text-foreground">Intelli-Hire</span>
         </button>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <button
-            onClick={() => navigate('/login')}
-            className="text-sm font-medium bg-gold-gradient text-primary-foreground px-4 py-2 rounded-lg hover:shadow-lg transition-all"
-          >
-            Sign In
-          </button>
+          {loggedIn && user ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-foreground">👤 {user.name}</span>
+              <button
+                onClick={handleLogout}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground border border-border px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate("/login")}
+              className="text-sm font-medium bg-gold-gradient text-primary-foreground px-4 py-2 rounded-lg hover:shadow-lg transition-all"
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </nav>
 
-      {/* Hero */}
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="max-w-2xl text-center animate-fade-in">
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
@@ -37,7 +63,7 @@ const HomePage = () => {
             Intelli-Hire is an AI-driven recruitment assistant that analyzes job descriptions and resumes to calculate compatibility scores, identify skill gaps, and provide data-driven hiring insights.
           </p>
           <button
-            onClick={() => navigate('/analyzer')}
+            onClick={handleStartAnalysis}
             className="mt-10 inline-flex items-center gap-2 bg-gold-gradient text-primary-foreground font-semibold px-8 py-3.5 rounded-lg shadow-gold hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
           >
             Start Analysis
@@ -48,14 +74,9 @@ const HomePage = () => {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="py-6 text-center border-t border-border">
-        <p className="text-xs text-muted-foreground">
-          Developed by Hiba Fathima & Farhin Khanam
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          B.Tech CSE | 2026
-        </p>
+        <p className="text-xs text-muted-foreground">Developed by Hiba Fathima & Farhin Khanam</p>
+        <p className="text-xs text-muted-foreground mt-1">B.Tech CSE | 2026</p>
       </footer>
     </div>
   );

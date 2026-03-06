@@ -11,6 +11,7 @@ import LoginPage from "./pages/LoginPage";
 import HRDashboard from "./pages/HRDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -24,10 +25,10 @@ const App = () => (
           <Route path="/" element={<SplashPage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/hr-dashboard" element={<HRDashboard />} />
-          <Route path="/candidate-dashboard" element={<CandidateDashboard />} />
-          <Route path="/analyzer" element={<AnalyzerPage />} />
-          <Route path="/results" element={<ResultsPage />} />
+          <Route path="/hr-dashboard" element={<ProtectedRoute><HRDashboard /></ProtectedRoute>} />
+          <Route path="/candidate-dashboard" element={<ProtectedRoute><CandidateDashboard /></ProtectedRoute>} />
+          <Route path="/analyzer" element={<ProtectedRoute><AnalyzerPage /></ProtectedRoute>} />
+          <Route path="/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
