@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "@/assets/logo.jpeg";
-import ThemeToggle from "@/components/ThemeToggle";
+import Navbar from "@/components/Navbar";
 import { extractSkillsFromText, matchSkills, getMatchRecommendation } from "@/lib/skill-database";
 import { JOB_ROLES_DB, recommendAlternativeRoles } from "@/lib/dummy-data";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -97,19 +96,7 @@ const CandidateDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <button onClick={() => navigate("/home")} className="flex items-center gap-3 group">
-          <img src={logo} alt="HF" className="w-10 h-10 rounded-full object-cover transition-shadow group-hover:shadow-gold" />
-          <span className="font-display font-bold text-lg text-foreground">Intelli-Hire</span>
-        </button>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <button onClick={() => { sessionStorage.removeItem("userSession"); navigate("/login"); }}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-            Sign Out
-          </button>
-        </div>
-      </nav>
+      <Navbar />
 
       <main className="flex-1 py-10 px-6">
         <div className="max-w-3xl mx-auto">
